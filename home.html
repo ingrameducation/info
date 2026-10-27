@@ -36,14 +36,16 @@
 </div>
 
 <script>
-    // ...
-    // ...
     const trainingData = {
-        "current_code_hash": "{{CODE_HASH}}",
-        "files": [{{FILE_LIST}}]
+        "current_code_hash": "120166c905b7cba8218f08ba52bd79ed1e9a32026467f48ae27def98727b6723",
+        "files": [
+    {
+        "name": "Copilot_SAM_2.5.2.exe",
+        "url": "https://github.com/ingrameducation/training/releases/download/0402/Copilot_SAM_2.5.2.exe"
+    }
+]
     };
 
-    // ...
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -59,19 +61,16 @@
 
         if (!input) return;
 
-        // ...
         const inputHash = await sha256(input);
 
-        // ...
         if (inputHash === trainingData.current_code_hash) {
             linkList.innerHTML = '';
-            trainingData.files.forEach(fileName => {
-                const url = `https://labdoc.blob.core.windows.net/training/${input}/${fileName}`;
+            trainingData.files.forEach(file => {
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = file.url;
                 a.className = 'file-link';
                 a.target = '_blank';
-                a.innerHTML = `&#128196; ${fileName}`;
+                a.innerHTML = `&#128196; ${file.name}`;
                 linkList.appendChild(a);
             });
             linksDiv.style.display = 'block';
