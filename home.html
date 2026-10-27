@@ -37,25 +37,8 @@
 
 <script>
     const trainingData = {
-        "current_code_hash": "905fcb5feeabdb7211dc25d840a78b93d6a71270a063dbbb1e842ae4ed7a93ff",
-        "files": [
-    {
-        "name": "Enable-RDP.ps1",
-        "url": "https://github.com/ingrameducation/training/releases/download/0103/Enable-RDP.ps1"
-    },
-    {
-        "name": "Intune.zip.001",
-        "url": "https://github.com/ingrameducation/training/releases/download/0103/Intune.zip.001"
-    },
-    {
-        "name": "Intune.zip.002",
-        "url": "https://github.com/ingrameducation/training/releases/download/0103/Intune.zip.002"
-    },
-    {
-        "name": "RDP-Onboarding-Startup.xml",
-        "url": "https://github.com/ingrameducation/training/releases/download/0103/RDP-Onboarding-Startup.xml"
-    }
-]
+        "current_code_hash": "{{CODE_HASH}}",
+        "files": {{FILES_JSON}}
     };
 
     async function sha256(message) {
