@@ -36,41 +36,28 @@
 </div>
 
 <script>
-    // De versleutelde data: onleesbaar voor wie in de broncode kijkt
-    const ENCRYPTED_PAYLOAD = "pKAlGJ9OsMg/+XY7AcO0P2YlA0Tu2J4tvvArf/Fy7Ef0S+0UqSMUSzGw8P9X60r/BI2Y9FgDZIxBLyxeyA+tiavQgZigk52vyUWecKl4M/QM5/0FjGBWc0e0OLrZXJAMAK6YzVd43XFJakmWHuLVDRv5+dEWfDmR5lgRnAzx3silErLVRWqZ9z3b2+DiNovbhM2257qlWhS8YW/QIQh/bsIn";
+    const DATA = "EcUU+BUcs+9+BUKJwWDa76d6Nlg8z473KMKcOT/0/tslA7NPZt9FUkqtE9+2ZFn4pmYcymSKcsxWECHocnJuYf/VZr4bbhta7xVPX8RVR4qOVGGT1CyGWG/l45Z7z/9DU3XFIqFyzKl1xFfjXIorANhkWY6uIB+bN84OrxlSf9gigfvW4NS/wcDXB5GP60L1ZI6yAKNIbsQOqtXx6gadGiFN7YRfBfsadjd/Ye4UCcaqwK7FGBmAD1LRABNBdZ4H+GppAVoWKo+pCYlglkpY0h7LhT54/DDXJdNcCpaIRqpHA3DBj3wV2L3yx5fxi0ImYIh2I2ZbfLcjVPIerJhl2FkGPlFX/GSWFHs4Nt/MoL3Fr3qyV1QJJczprNSHRVYRJW1QgqXCOGhSP6CjiGgp+ivEwodelaGB00GWoNS8mrvz1NzONSTWDch4spkCYWTpRHsZtb7wLpgRxkn8BDWiuU5C/bvHqOHkXVYNz5fIKAW1mM9wE5FCsEjVm2Yuc26ffSe1VlKtwIjtaKFWQoKDhHJo13gpcYObNmel9tKFEkNNEIryz/ZzJzMfx8zY14xkaaXxrdbnuJtFRmssNpwrydj0BsbwDB8N9X4E6IzDXRHdKsYviTQ78HZBxtyV+hAQmmmzCNaNVuWvEnlt8HMTH5zy+T9bjDcRaDB44JsFd665rRwlnguFQKL8VQ0NhclWOZFUxQ==";
 
-    async function decryptData(password, base64Data) {
-        // 1. Converteer Base64 naar bytes
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
+    async function unpack(pass, raw) {
+        const bin = atob(raw);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
-        // 2. Haal de 12-byte IV (nonce) en de versleutelde data uit elkaar
-        const iv = bytes.slice(0, 12);
-        const ciphertext = bytes.slice(12);
-
-        // 3. Maak van het wachtwoord een AES-GCM sleutel
-        const pwBuffer = new TextEncoder().encode(password);
-        const keyHash = await crypto.subtle.digest('SHA-256', pwBuffer);
-        const cryptoKey = await crypto.subtle.importKey(
+        const key = await crypto.subtle.importKey(
             'raw',
-            keyHash,
+            await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)),
             { name: 'AES-GCM' },
             false,
             ['decrypt']
         );
 
-        // 4. Ontsleutel (faalt automatisch als het wachtwoord verkeerd is)
-        const decryptedBuffer = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: iv },
-            cryptoKey,
-            ciphertext
+        const buffer = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: bytes.slice(0, 12) },
+            key,
+            bytes.slice(12)
         );
 
-        const decodedText = new TextDecoder().decode(decryptedBuffer);
-        return JSON.parse(decodedText);
+        return JSON.parse(new TextDecoder().decode(buffer));
     }
 
     async function validateAndShow() {
@@ -82,10 +69,7 @@
         if (!input) return;
 
         try {
-            // Probeer te ontcijferen
-            const files = await decryptData(input, ENCRYPTED_PAYLOAD);
-
-            // Als dit slaagt, was de code juist!
+            const files = await unpack(input, DATA);
             linkList.innerHTML = '';
             files.forEach(file => {
                 const a = document.createElement('a');
@@ -97,9 +81,7 @@
             });
             linksDiv.style.display = 'block';
             errorP.style.display = 'none';
-
-        } catch (e) {
-            // Ontcijfering mislukt: foute code
+        } catch {
             linksDiv.style.display = 'none';
             errorP.style.display = 'block';
         }
