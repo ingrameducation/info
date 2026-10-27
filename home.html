@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Access</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding-top: 50px; background-color: #f4f4f9; color: #333; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        h1 { color: #0078d4; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        button { width: 100%; padding: 12px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background-color: #005a9e; }
+        #links { margin-top: 25px; display: none; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
+        .file-link { display: block; padding: 12px; margin-bottom: 8px; background: #f0f7ff; text-decoration: none; color: #0078d4; border-radius: 6px; font-weight: 500; transition: 0.2s; }
+        .file-link:hover { background: #e1f0fe; transform: translateX(5px); }
+        #error { color: #d13438; display: none; margin-top: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <img src="{{LOGO_FILENAME}}" alt="Logo" style="max-width: 150px; max-height: 80px;">
+    </div>
+    <h1>Training Access</h1>
+    <p>Please enter your training code:</p>
+    <input type="password" id="code-input" placeholder="Enter code here...">
+    <button onclick="validateAndShow()">Access Documents</button>
+
+    <div id="links">
+        <h3 style="font-size: 16px; margin-top: 0;">Your Documents:</h3>
+        <div id="link-list"></div>
+    </div>
+    <p id="error">Invalid code. Access denied.</p>
+</div>
+
+<script>
+    // ...
+    // ...
+    const trainingData = {
+        "current_code_hash": "{{CODE_HASH}}",
+        "files": [{{FILE_LIST}}]
+    };
+
+    // ...
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function validateAndShow() {
+        const input = document.getElementById('code-input').value.trim();
+        const errorP = document.getElementById('error');
+        const linksDiv = document.getElementById('links');
+        const linkList = document.getElementById('link-list');
+
+        if (!input) return;
+
+        // ...
+        const inputHash = await sha256(input);
+
+        // ...
+        if (inputHash === trainingData.current_code_hash) {
+            linkList.innerHTML = '';
+            trainingData.files.forEach(fileName => {
+                const url = `https://labdoc.blob.core.windows.net/training/${input}/${fileName}`;
+                const a = document.createElement('a');
+                a.href = url;
+                a.className = 'file-link';
+                a.target = '_blank';
+                a.innerHTML = `&#128196; ${fileName}`;
+                linkList.appendChild(a);
+            });
+            linksDiv.style.display = 'block';
+            errorP.style.display = 'none';
+        } else {
+            linksDiv.style.display = 'none';
+            errorP.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>
