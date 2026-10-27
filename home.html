@@ -36,16 +36,41 @@
 </div>
 
 <script>
-    const trainingData = {
-        "current_code_hash": "{{CODE_HASH}}",
-        "files": {{FILES_JSON}}
-    };
+    // De versleutelde data: onleesbaar voor wie in de broncode kijkt
+    const ENCRYPTED_PAYLOAD = "pKAlGJ9OsMg/+XY7AcO0P2YlA0Tu2J4tvvArf/Fy7Ef0S+0UqSMUSzGw8P9X60r/BI2Y9FgDZIxBLyxeyA+tiavQgZigk52vyUWecKl4M/QM5/0FjGBWc0e0OLrZXJAMAK6YzVd43XFJakmWHuLVDRv5+dEWfDmR5lgRnAzx3silErLVRWqZ9z3b2+DiNovbhM2257qlWhS8YW/QIQh/bsIn";
 
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    async function decryptData(password, base64Data) {
+        // 1. Converteer Base64 naar bytes
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // 2. Haal de 12-byte IV (nonce) en de versleutelde data uit elkaar
+        const iv = bytes.slice(0, 12);
+        const ciphertext = bytes.slice(12);
+
+        // 3. Maak van het wachtwoord een AES-GCM sleutel
+        const pwBuffer = new TextEncoder().encode(password);
+        const keyHash = await crypto.subtle.digest('SHA-256', pwBuffer);
+        const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            keyHash,
+            { name: 'AES-GCM' },
+            false,
+            ['decrypt']
+        );
+
+        // 4. Ontsleutel (faalt automatisch als het wachtwoord verkeerd is)
+        const decryptedBuffer = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            cryptoKey,
+            ciphertext
+        );
+
+        const decodedText = new TextDecoder().decode(decryptedBuffer);
+        return JSON.parse(decodedText);
     }
 
     async function validateAndShow() {
@@ -56,11 +81,13 @@
 
         if (!input) return;
 
-        const inputHash = await sha256(input);
+        try {
+            // Probeer te ontcijferen
+            const files = await decryptData(input, ENCRYPTED_PAYLOAD);
 
-        if (inputHash === trainingData.current_code_hash) {
+            // Als dit slaagt, was de code juist!
             linkList.innerHTML = '';
-            trainingData.files.forEach(file => {
+            files.forEach(file => {
                 const a = document.createElement('a');
                 a.href = file.url;
                 a.className = 'file-link';
@@ -70,7 +97,9 @@
             });
             linksDiv.style.display = 'block';
             errorP.style.display = 'none';
-        } else {
+
+        } catch (e) {
+            // Ontcijfering mislukt: foute code
             linksDiv.style.display = 'none';
             errorP.style.display = 'block';
         }
